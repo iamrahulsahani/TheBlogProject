@@ -1,3 +1,4 @@
+from distutils import core
 from functools import partial
 from django.shortcuts import render
 from rest_framework.decorators import api_view, APIView, permission_classes, authentication_classes
@@ -13,6 +14,9 @@ from rest_framework.authtoken.models import Token
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
+from django.core.paginator import Paginator
+
+from rest_framework.decorators import action
 
 @api_view(['GET', "POST"])
 def index(request, usr):
@@ -35,8 +39,16 @@ def index(request, usr):
 def people(request):
     if request.method == "GET":
         out = Person.objects.all()
-        serializer = PersonSerializer(out, many = True)
-        return Response(serializer.data)
+        page = request.GET.get('page', 1)
+        page_size = 3
+        try:
+            paginator = Paginator(out, page_size)
+            serializer = PersonSerializer(paginator.page(page), many = True)
+            return Response(serializer.data)
+        except:
+            return Response({"msg":"invalid page number"})
+        # serializer = PersonSerializer(out, many = True)
+        # return Response(serializer.data)
     elif request.method == "POST":
         data = request.data
         serializer = PersonSerializer(data = data)
